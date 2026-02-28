@@ -1,0 +1,1080 @@
+from kivy.app import App
+from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.button import Button
+from kivy.uix.label import Label
+from kivy.uix.scrollview import ScrollView
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.widget import Widget
+from kivy.clock import Clock
+from kivy.metrics import dp
+from kivy.graphics import Color, Rectangle, RoundedRectangle, Line
+# from kivy.core.window import Window
+# Window.size = (480, 800)  # optional: force window size if needed
+
+# =========================
+# THEME + UI HELPERS (Path A)
+# =========================
+PRIMARY       = (0.12, 0.47, 0.95, 1)  # blue
+PRIMARY_DARK  = (0.09, 0.36, 0.72, 1)
+ACCENT        = (1.0, 0.76, 0.03, 1)   # amber
+SURFACE       = (0.12, 0.12, 0.12, 1)  # dark background
+CARD_BG       = (0.16, 0.16, 0.18, 1)  # card background
+TEXT          = (1, 1, 1, 1)
+SUBTEXT       = (0.85, 0.85, 0.85, 1)
+
+def apply_background(widget, color=SURFACE):
+    """Paint a solid background for any root container."""
+    widget.canvas.before.clear()
+    with widget.canvas.before:
+        Color(*color)
+        bg = Rectangle(pos=widget.pos, size=widget.size)
+    widget.bind(pos=lambda *_: setattr(bg, "pos", widget.pos))
+    widget.bind(size=lambda *_: setattr(bg, "size", widget.size))
+    return bg
+
+def primary_button(text, on_press=None, height=dp(52), full=True):
+    """Material-like primary button."""
+    btn = Button(
+        text=text,
+        size_hint=(1 if full else None, None),
+        height=height,
+        background_normal="",
+        background_color=PRIMARY,
+        color=TEXT
+    )
+    if on_press: btn.bind(on_press=on_press)
+    return btn
+
+def outline_button(text, on_press=None, height=dp(48), full=True):
+    """Flat outlined button."""
+    btn = Button(
+        text=text,
+        size_hint=(1 if full else None, None),
+        height=height,
+        background_normal="",
+        background_color=(0,0,0,0),
+        color=TEXT
+    )
+    with btn.canvas.before:
+        Color(1,1,1,0.18)
+        rect = RoundedRectangle(radius=[dp(10)], pos=btn.pos, size=btn.size)
+        Color(1,1,1,0.25)
+        line = Line(rounded_rectangle=[btn.x, btn.y, btn.width, btn.height, dp(10)], width=1.1)
+    def _sync(*_):
+        rect.pos = btn.pos; rect.size = btn.size
+        line.rounded_rectangle = [btn.x, btn.y, btn.width, btn.height, dp(10)]
+    btn.bind(pos=_sync, size=_sync)
+    if on_press: btn.bind(on_press=on_press)
+    return btn
+
+def card_container(pad=dp(12)):
+    """Rounded card container for long text."""
+    box = BoxLayout(orientation="vertical", padding=pad, size_hint=(1, None))
+    with box.canvas.before:
+        Color(*CARD_BG)
+        bg = RoundedRectangle(radius=[dp(12)], pos=box.pos, size=box.size)
+    box.bind(pos=lambda *_: setattr(bg, "pos", box.pos))
+    box.bind(size=lambda *_: setattr(bg, "size", box.size))
+    return box
+
+def set_feedback_chip(label, ok: bool, text: str):
+    """Color chip behind feedback text (green/red)."""
+    label.canvas.before.clear()
+    with label.canvas.before:
+        Color(*( (0.56, 0.91, 0.64, 1) if ok else (1.0, 0.65, 0.65, 1) ))
+        bg = RoundedRectangle(radius=[dp(10)], pos=label.pos, size=label.size)
+    def _sync(*_):
+        bg.pos = label.pos; bg.size = label.size
+    label.bind(pos=_sync, size=_sync)
+    label.text = text
+    label.color = (0,0,0,1)  # dark text on light chip
+
+def toast(parent, msg: str, secs=1.5):
+    """Tiny toast in the corner (optional helper)."""
+    lbl = Label(text=msg, size_hint=(None, None), color=(1,1,1,1))
+    lbl.texture_update()
+    lbl.size = (lbl.texture_size[0] + dp(24), lbl.texture_size[1] + dp(14))
+    with lbl.canvas.before:
+        Color(0,0,0,0.78)
+        bg = RoundedRectangle(radius=[dp(12)], pos=lbl.pos, size=lbl.size)
+    def _sync(*_):
+        bg.pos = lbl.pos; bg.size = lbl.size
+    lbl.bind(pos=_sync, size=_sync)
+    parent.add_widget(lbl)
+    def _place(*_):
+        lbl.pos = (parent.width - lbl.width - dp(16), parent.height - lbl.height - dp(16))
+    parent.bind(size=_place); Clock.schedule_once(_place, 0)
+    Clock.schedule_once(lambda *_: parent.remove_widget(lbl), secs)
+
+
+# ======================================
+# 🔥🔥 EDIT ONLY THIS SECTION 🔥🔥
+# ======================================
+
+app_data = {
+    "Level 1 - EMI": {
+        "Lesson 1 – Intro- What is EMI?": {
+            "content": """EMI stands for Equated Monthly Instalments. It refers to the fixed monthly payment made to the lender to repay the loan or debt, such as a home loan, car loan, or a personal loan. It is a widely preferred method as it enables individuals to afford costly purchases by breaking the payment into manageable instalments. In case if you wish to buy a new phone but lack sufficient funds, you can buy it using EMI method. To initiate this you will need to make a down payment, which is an lump sum money paid from your savings.
+It covers a part of the initial loan amount, called the principal, as well as the interest that is owed to the lender. When you take a loan, you need to pay the money back with interest. The initial amount and the interest are not paid back in one go. Instead, they are split into smaller amounts that are paid at regular intervals. When this payment is made monthly, we call it EMI.
+
+The following are some features and benefits of EMI:
+Features:
+Structured Repayment: EMIs provide a systematic way to repay loans with fixed monthly instalments.
+Transparency: Borrowers know exactly how much to pay each month, aiding in budgeting.
+Customisable: Loan tenures and down payments can often be adjusted to suit individual needs.
+Benefits:
+Predictable Budgeting: EMI payments offer predictability, making it easier to plan and manage finances.
+Affordability: Smaller, regular payments make loans more accessible and affordable.
+Interest Reduction: Over time, a larger portion of EMIs goes toward principal repayment, reducing overall interest costs.
+Improved Credit Score: Timely EMI payments can positively impact your credit score.
+These features and benefits underscore the significance of loan EMIs in facilitating responsible borrowing and financial stability.
+""",
+            "questions": [
+                {
+                    "question": "What is EMI?",
+                    "options": ["Easy Monthly Instalment", "Equated Monthly Instalment", "Emergency Monthly Instalment", "Even Monthly Instalment"],
+                    "answer": 1,
+                    "explanation": "EMI stands for Equated Monthly Instalment."
+                },
+                {
+                    "question": "EMI includes what?",
+                    "options": ["Principal amount", "Interest only", "Neither principal nor interest", "Both principal and interest"],
+                    "answer": 3,
+                    "explanation": "EMI includes both principal and interest, split across a fixed tenure."
+                }
+            ]
+        },
+
+        "Lesson 2 – Why take EMIs?": {
+            "content": """When you want to purchase an item, it might be costly. But you can choose to spend your savings and buy it. It is a method of payment which is known as the ‘full payment method’. In this method you completely pay for the purchased item once and for all, that’s it no more drama. While in some cases you may prefer having your savings for emergency funds or even for other needs. So, in such cases, you opt for EMI method where you pay some amount as ‘down payment’ and then purchase the item. From the following month, you pay the EMI, i.e., you start paying the remaining amount along with the interest. This amount that is required to be paid by you is calculated using some formula which we shall see in the next lesson. 
+Obviously, EMIs have interest that is excess apart from the actual payment for the purchased item. But you get time to make the payment in exchange of that interest paid. EMIs reduce financial burden that comes when making full down payment. But if you can plan wisely and save the required money well before in hand of purchase, you can prefer paying in full as you avoid the interest levied upon you. That requires understanding of budgeting and the clear difference of wants and needs. Don’t worry, these topics shall be introduced in the upcoming levels.
+
+Similarly prefer EMI method only when there is a constant income is available to pay the EMI every month. Also completing EMIs on date shows that you are responsible and hence your CIBIL score  or credit worthiness is increased. This helps in easy borrowing in the future.""",
+            "questions": [
+                {
+                    "question": "In which case taking EMI is profitable?",
+                    "options": ["When you don’t have funds", "When you have constant income and need time to repay", "When you have full money to pay", "EMI is never profitable"],
+                    "answer": 1,
+                    "explanation": "Use EMI when you have steady income and need time; avoid if you already have full payment."
+                },
+                {
+                    "question": "Does skipping the timely EMI payment affect our credit worthiness?",
+                    "options": ["Yes", "No"],
+                    "answer": 0,
+                    "explanation": "Yes. Late/missed EMIs negatively impact your credit score."
+                }
+            ]
+        },
+
+        "Lesson 3 – How does EMI work?": {
+            "content": """Understanding the mechanism of how EMI works is crucial for making other financial decisions too.
+Step 1: Loan Disbursal- The lender approves and disburses the loan amount to the borrower.
+Step 2: Fixed monthly payment- The borrower repays through Equated Monthly Instalments (EMIs), which remain constant.
+Step 3: Principal+ Interest- Each EMI includes both principal repayment and interest charges.
+Step 4: Interest priority- In the early months, a larger portion goes towards interest.
+Step 5: Gradual shift- Over time, the principal component increases whilst the interest portion decreases.
+Step 6: Reducing balance method- Interest is recalculated on the outstanding loan balance after every payment.
+Borrowers commit to paying EMIs for a specified loan tenure, typically ranging from months to years.
+This gradual shift ensures that borrowers steadily reduce their outstanding loan balance.""",
+            "questions": [
+                {
+                    "question": "In which step is the interest recalculated?",
+                    "options": ["Fixed monthly payment", "Gradual shift", "Reducing balance method", "Interest priority"],
+                    "answer": 2,
+                    "explanation": "In the reducing balance method, interest is recalculated after each payment on the outstanding principal."
+                }
+            ]
+        },
+
+        "Lesson 4 – EMI calculation": {
+            "content": """EMIs are calculated using two primary methods- the fixed rate method and the Reducing- balance method. The choice of method impacts the overall interest paid and the EMI amount.
+
+Fixed rate method: In the fixed rate method, the interest is calculated on the entire loan amount for the loan tenure, and the EMI remains constant throughout the repayment period. The formula used is:
+EMI=(P*R*(1+R)^N)/((1+R)^N - 1)
+where P= Principal amount
+R = Monthly interest rate (annual rate divided by 12)
+N = Loan tenure months
+This method offers predictability as you pay the same amount every month, regardless of the loan progress.
+
+Reducing balance method: In reducing balance method, the interest is calculated only on the outstanding principal amount. As you pay each EMI, the principal reduces, resulting in a gradual decrease in the interest portion. The EMI remains constant, but the interest paid decreases over time, whilst the principal repayment increases. This method is more cost effective for borrowers, as the total interest payable is lower compared to the fixed rate method.
+Factors affecting EMI: When it comes to EMI payments, several factors come into play, affecting the amount you'll need to pay each month. Here are the key influences:
+1. Loan Amount:
+The principal amount you borrow directly impacts your EMI. A higher loan amount results in larger EMI payments.
+2. Interest Rate:
+The interest rate applied to your loan is a significant determinant. Higher rates lead to higher EMIs.
+3. Loan Tenure:
+The duration over which you repay your loan affects EMI. Longer tenures typically mean smaller EMIs but higher overall interest costs.
+4. Down Payment:
+A larger down payment reduces the principal amount, resulting in lower EMIs.
+5. Frequency of Compounding:
+The way interest is compounded (monthly, annually, etc.) can impact your EMI.
+6. Credit Score:
+A better credit score often leads to lower interest rates, thereby affecting your EMI amount.
+Understanding these factors is vital for borrowers, as they can help tailor loan terms to suit their financial situation and budget constraints.""",
+            "questions": [
+                {
+                    "question": "How many types of EMI payments are there presently?",
+                    "options": ["1", "2", "3", "4"],
+                    "answer": 1,
+                    "explanation": "Two common methods: fixed rate and reducing balance."
+                },
+                {
+                    "question": "What reduces the principal amount and hence lowers EMI?",
+                    "options": ["Down payment", "Interest rate", "Loan tenure", "None of these"],
+                    "answer": 0,
+                    "explanation": "Higher down payment reduces the amount borrowed and thus EMI."
+                }
+            ]
+        },
+
+        "Lesson 5 – Different types of EMI and some don’ts ": {
+            "content": """Understanding what EMI means and its types helps the borrower to choose the right loan for their needs. The EMI based loans cater to various financial requirements offering flexibility in repayment.
+
+Types of EMI loans:
+1. Home loan EMI- Long term financing for purchasing or constructing a home with tenure up to 30 years.
+2. Personal loan EMI- Unsecured loan with fixed EMIs for funding expenses like medical emergencies or travel.
+3. Car loan EMI- Helps purchase a vehicle with structured repayments over a set period.
+4. Education loan EMI- Financial aid for students, often with flexible repayment post-course completion.
+5. Business loan EMI- Supports business expansion, equipment purpose, or working capital needs.
+
+Some don’ts while choosing EMI method:
+Never ignore the hidden charges- check for processing fees and penalties and other costs that are included.
+Borrow according to your repayment capacity only. Avoid over confidence in this aspect.
+Compare various interest rates before choosing EMI.
+""",
+            "questions": [
+                {
+                    "question": "Long term financing can have tenures up to how many years?",
+                    "options": ["10", "20", "25", "30"],
+                    "answer": 3,
+                    "explanation": "Home loans can go up to 30 years."
+                }
+            ]
+        }
+    },
+
+    "Level 2 - Loans": {
+        "Lesson 1 – What is a loan?": {
+            "content": """ Loan: Money borrowed from a lender that must be repaid with interest.
+                    Principal: The original amount borrowed.
+                    Interest: Extra money paid to the lender for borrowing.
+                    Tenure: Duration of the loan.
+                    EMI (Equated Monthly Instalment): Fixed monthly repayment including principal + interest.
+                    Example:
+                    You borrow ₹10,000 to buy a bicycle. You repay ₹1,000 per month for 12 months plus some interest.
+Loan = Principal + Interest
+EMI = Monthly payment
+""",
+            "questions": [
+                {
+                    "question": "What is the principal in a loan?",
+                    "options": ["The interest", "The borrowed amount", "The EMI", "None of these"],
+                    "answer": 1,
+                    "explanation": "Principal is the original amount of money borrowed."
+                },
+                {
+                    "question": "Question 2?",
+                    "options": ["A", "B", "C", "D"],
+                    "answer": 1,
+                    "explanation": "Placeholder explanation."
+                },
+                {
+                    "question": "What does EMI stand for?",
+                    "options": ["Equated Monthly Instalment", "Easy Monthly Interest", "Estimated Money Investment", "None of these"],
+                    "answer": 0,
+                    "explanation": "EMI is the fixed monthly payment including principal + interest."
+                },
+                {
+                    "question": "Interest is:",
+                    "options": ["Extra money paid to lender", "Original loan", "Loan tenure", "None of these"],
+                    "answer": 0,
+                    "explanation": "Interest is the cost of borrowing money."
+                },
+                {
+                    "question": "Tenure refers to?",
+                    "options": ["The total loan period ", " Monthly EMI ", " Principal amount ", "None of these"],
+                    "answer": 0,
+                    "explanation": "Tenure is the duration over which the loan is repaid."
+                },
+                {
+                    "question": "Which of the following is true?",
+                    "options": ["EMI = Principal only ", " Loan = Principal + Interest ", " Interest = Tenure ", "D"],
+                    "answer": 1,
+                    "explanation": "Loan = Principal + Interest."
+                }
+            ]
+        },
+
+        "Lesson 2 - Why Take a Loan? ": {
+            "content": """ Loans help you buy things you can’t afford immediately. Common Reasons:
+                   1. Education – pay tuition, books, courses
+                   2. Housing – buy/renovate home
+                   3. Vehicle – buy car/bike
+                   4. Emergency Expenses – medical bills, urgent travel
+                   5. Personal Projects – start a business, fund hobbies
+                   Advantages: Quick access to money, build credit score, flexible repayment
+                    Disadvantages: Interest increases total cost, risk of debt, late payments harm credit score
+                    Example Scenario:
+                    Personal loan ₹15,000 at 10% annual interest for 6 months → EMI ₹2,550 per month.
+               Loans = Quick access to money
+               Calculate EMI + interest before borrowing
+               Borrow responsibly
+.""",
+            "questions": [
+                {
+                    "question": "Example of an emergency loan?",
+                    "options": ["Buying a new phone", "Paying sudden medical bills", "Buying video games", "None of these"],
+                    "answer": 1,
+                    "explanation": "Emergency loans are for urgent, necessary expenses."
+                },
+                {
+                    "question": "Loans should be taken?",
+                    "options": ["Only if you can repay", "Without thinking", "For small daily expenses", "For the sake of loan"],
+                    "answer": 0,
+                    "explanation": "Borrow responsibly—only what you can repay."
+                },
+                {
+                    "question": "A risk of borrowing is:",
+                    "options": ["Paying interest", "Building credit", "Flexible EMIs", "None of these"],
+                    "answer": 0,
+                    "explanation": "Interest increases the total amount you repay."
+                },
+                {
+                    "question": "One advantage of taking a loan is:",
+                    "options": ["Debt accumulation", "Quick access to money", "Interest-free borrowing", "None of these"],
+                    "answer": 1,
+                    "explanation": "Loans provide quick access to funds."
+                },
+                {
+                    "question": "Which is NOT a common reason to take a loan?",
+                    "options": ["Education", "Buying a house", "Watching movies", "Buying a car"],
+                    "answer": 2,
+                    "explanation": "Loans are for essential or big expenses, not entertainment."
+                }
+            ]
+        },
+
+        "Lesson 3 - How Loans Work": {
+            "content": """Repayment: Paying back loan in instalments.
+                    Simple Interest: Interest calculated on principal only.
+                    Compound Interest: Interest on principal + accumulated interest.                    EMI Calculation Formula:
+                    EMI = [P × r × (1+r) ^n] / [(1+r)^n – 1] the same formula used in level 1.
+                    Example: Loan ₹10,000 at 10% yearly interest for 12 months means EMI approx. ₹879/month.
+                    Simple vs Compound Interest
+                    EMI formula basics""",
+            "questions": [
+                {
+                    "question": "Longer tenure results in?",
+                    "options": ["Lower EMI per month", "Higher EMI per month", "EMI unchanged", "None of these"],
+                    "answer": 0,
+                    "explanation": "Spreading repayment over more months lowers monthly EMI."
+                },
+                {
+                    "question": "Higher interest rate means?",
+                    "options": ["Higher EMI", "Lower EMI", "No effect", "None of these"],
+                    "answer": 0,
+                    "explanation": "Higher interest increases monthly payment."
+                },
+                {
+                    "question": "EMI formula calculates?",
+                    "options": ["Monthly repayment", "Principal only", "Total interest", "D"],
+                    "answer": 0,
+                    "explanation": "EMI gives the fixed monthly payment including principal + interest."
+                },
+                {
+                    "question": "Compound interest is",
+                    "options": ["On principal only", "On principal + accumulated interest", "Same as EMI", "None of these"],
+                    "answer": 1,
+                    "explanation": "Compound interest adds accumulated interest to principal."
+                },
+                {
+                    "question": "Simple interest is calculated on:",
+                    "options": ["Principal only", "Principal + interest", "EMI", "None of these"],
+                    "answer": 0,
+                    "explanation": "Simple interest is charged only on the principal amount."
+                }
+            ]
+        },
+
+        "Lesson 4 - Loan Application Process": {
+            "content": """Applicant: Person applying for a loan.
+    Eligibility: Age, income, employment, credit history.
+    Verification: Checking documents, income, credit score.
+    Approval & Disbursement: Bank approves and transfers loan.
+    Steps: 
+    Apply 
+    Verify
+    Approve
+    Disburse
+    Eligibility: Criteria to qualify
+    Verification: Document and credit check
+    Disbursement: Bank transfers money
+""",
+            "questions": [
+                {
+                    "question": "Correct sequence of loan process?",
+                    "options": ["Apply - Verify - Approve - Disburse", "Approve - Apply - Disburse", "Verify -Disburse - Apply", "None of these"],
+                    "answer": 0,
+                    "explanation": "This is the standard loan process."
+                },
+                {
+                    "question": "Disbursement means?",
+                    "options": ["Bank gives loan money", "Paying interest", "Filling form", "None of these"],
+                    "answer": 0,
+                    "explanation": "Disbursement is when funds are transferred to the borrower."
+                },
+                {
+                    "question": "Verification involves?",
+                    "options": ["Checking documents", "Paying EMI", "Choosing bank colour", "None of these"],
+                    "answer": 0,
+                    "explanation": "Banks verify applicant’s ID, income, and credit."
+                },
+                {
+                    "question": "Eligibility may depend on?",
+                    "options": ["Age, income, credit history", "Favourite colour", "Hobby", "None of these"],
+                    "answer": 0,
+                    "explanation": "Banks check these criteria before approving a loan."
+                },
+                {
+                    "question": "Who applies for a loan?",
+                    "options": ["Lender", "Applicant", "EMI agent", "None of these"],
+                    "answer": 1,
+                    "explanation": "The applicant is the person taking the loan."
+                }
+            ]
+        },
+
+        "Lesson 5 - Risks & Responsibility": {
+            "content": """Default: Failing to repay loan
+Late Payment Fee: Penalty for missing EMI
+Credit Score: Measures repayment reliability
+Responsible Borrowing: Borrow only what you can repay
+Example: Missed EMI = Late fee + decreased credit score - future loans harder
+Default = Failure to repay
+Credit score = Reliability measure
+Borrow responsibly
+
+""",
+            "questions": [
+                {
+                    "question": "Missing EMI affects?",
+                    "options": ["Credit score negatively", "Nothing", "Only EMI"],
+                    "answer": 0,
+                    "explanation": "Missed payments reduce credit reliability."
+                },
+                {
+                    "question": "Responsible borrowing means?",
+                    "options": ["Borrow only what you can repay", "Borrow as much as possible", "Ignore EMI", "None of these"],
+                    "answer": 0,
+                    "explanation": "Borrowing within your capacity prevents debt issues."
+                },
+                {
+                    "question": "Credit score measures?",
+                    "options": ["Repayment reliability", "Interest rate", "Loan tenure", "None of these"],
+                    "answer": 0,
+                    "explanation": "It reflects your repayment history."
+                },
+                {
+                    "question": "Late payment leads to?",
+                    "options": ["Penalty fee", "Bonus", "Loan closure", "None of these"],
+                    "answer": 0,
+                    "explanation": "Late EMI attracts fees and credit score reduction."
+                },
+                {
+                    "question": "Default means?",
+                    "options": ["Repaying on time", "Failing to repay", "Paying extra", "None of these"],
+                    "answer": 1,
+                    "explanation": "Default occurs when EMIs are not repaid."
+                }
+            ]
+        }
+    },
+
+    "Level 3 - Taxes and general finance": {
+        "Lesson 1 - What is taxation?": {
+            "content": """ Taxation transfers wealth from households or businesses to the government. It is basically tax is a mandatory financial charge imposed by governments on individuals, businesses, or entities to fund public services and infrastructure.
+Governments collect taxes on income, property, consumptions, or transactions without directly exchanging specific goods or services unlike fees such as tolls. These funds support essentials like roads, schools, healthcare, defence and welfare programs.
+Below are some key benefits of taxes:
+Controlling inflation:
+When the government increases tax rates, individuals and businesses have to use more of their income towards paying taxes. This leaves them with a lesser amount in hand, thereby making them spend less. The lower demand for goods and services brings down prices and helps control inflation.
+Addresses income inequalities:
+Progressive tax systems, where higher-income individuals are taxed at higher rates, enable the government to collect more tax revenue from those who can afford to pay more. This helps bridge the income gap and improves the well-being of the overall society.
+Development of the nation:
+Taxes provide a steady income for the government. Taxes fund essential public services such as healthcare, education, sanitation, transportation and utilities. They are also used for infrastructure development, public services, national defence and administrative costs.
+Managing the economy:
+The concept of income tax is essential for a nation. Taxes bring revenue into the economy. It stimulates economic growth for the country and helps it progress in multiple domains, right from infrastructure to education, healthcare, economic reforms and more.
+Social welfare:
+The taxes collected by the government can be used for various social welfare programme. These funds may go toward social security benefits for senior citizens, poverty alleviation programme, subsidies and other initiatives to improve the well-being of citizens. Paying taxes on time is a legal requirement in India. Delays in tax payments can result in imposition of penalties and may also be considered tax evasion. This is a punishable offence and can lead to heavy fines and legal issues. Therefore, it is crucial to ensure timely payments to avoid these adverse outcomes. Taxes are also proof that you are an income generator.""",
+            "questions": [
+                {
+                    "question": "Who contribute toward taxes?",
+                    "options": ["Citizen", "Property owners", "Children", "None of the above"],
+                    "answer": 0,
+                    "explanation": "Citizens pay taxes to fund public services."
+                },
+                {
+                    "question": "What for taxes are collected?",
+                    "options": ["To provide loans to other nations", "Provide essential services to the citizens", "For no use", "Return to people later"],
+                    "answer": 1,
+                    "explanation": "Taxes fund services like healthcare, education, and infrastructure."
+                }
+            ]
+        },
+
+        "Lesson 2 – How does tax system work?": {
+            "content": """India's taxation system is a federal structure divided between direct and indirect taxes, with authority split among the central government, state governments, and local bodies. It has evolved significantly with reforms like GST to simplify compliance and reduce cascading taxes
+
+Direct Taxes
+These are levied on income and wealth, with the burden directly on the taxpayer. Key types include:
+• Personal Income Tax: Progressive slabs under the new regime (FY 2025-26): 0% up to ₹4 lakh, 5% (₹4-8L), 10% (₹8-12L), 15% (₹12-16L), 20% (₹16-20L), 25% (₹20-24L), 30% above ₹24L, plus surcharge and 4% cess.
+• Corporate Tax: Around 25-30% for domestic firms, 35% for foreign, with surcharges.
+• Capital Gains Tax: 12.5% without indexation or 20% with for long-term assets.These taxes are administered by the Central Board of Direct Taxes (CBDT)
+Indirect Taxes
+Passed on to consumers via goods/services. Dominated by GST since 2017, which subsumed excise, VAT, service tax, etc.:
+• CGST (intra-state central share), SGST (state share), IGST (inter-state).
+• Eliminates "tax on tax"; registration mandatory above ₹20-40 lakh turnover.
+
+""",
+            "questions": [
+                {
+                    "question": "Who administers direct taxes?",
+                    "options": ["Central Board of Direct Taxes ", "GST Bhavan", "Central Government", "none of these"],
+                    "answer": 0,
+                    "explanation": "CBDT administers direct taxes in India."
+                },
+                {
+                    "question": "Tax collected via goods and services are known as?",
+                    "options": ["Indirect taxes", "Direct taxes", "Income tax", "None of these"],
+                    "answer": 0,
+                    "explanation": "Indirect taxes (like GST) are collected on goods and services."
+                }
+            ]
+        },
+
+        "Lesson 3 – Why taxing is good and necessary?": {
+            "content": """ Funds Public Goods
+Revenue from taxes like GST and income tax finances roads, schools, defence, and schemes like PM-KISAN, enabling societal benefits no individual could afford alone.
+Reduces Inequality
+Progressive rates ensure the wealthy pay more, redistributing via subsidies and free services to bridge rich-poor gaps.
+Boosts Economy
+Reforms like GST unify markets, cut logistics costs, curb evasion, and attract FDI, spurring GDP growth (e.g., via lower corporate taxes).
+Stabilizes and Regulates
+Controls inflation, encourages savings, and incentivizes efficient resource use and competition. 
+The concepts of tax filing not dealt here.""",
+            "questions": [
+                {
+                    "question": "Question 1?",
+                    "options": ["A", "B", "C", "D"],
+                    "answer": 0,
+                    "explanation": "Placeholder explanation."
+                },
+                {
+                    "question": "Question 2?",
+                    "options": ["A", "B", "C", "D"],
+                    "answer": 1,
+                    "explanation": "Placeholder explanation."
+                }
+            ]
+        },
+
+        "Lesson 4 – Case study": {
+            "content": """ Pre-GST, businesses faced cascading taxes like VAT, excise, and service tax, leading to higher costs and inefficiencies. GST created a single national market, expanding the tax base and revenue from ₹11.77 lakh crore (FY17) to over ₹20 lakh crore (FY25).
+Business Impacts
+• Tata Motors (Manufacturing): Revamped supply chain, cut logistics costs, passed savings to consumers via lower prices, enhancing competitiveness despite initial IT upgrades.
+• Hindustan Unilever (FMCG): Streamlined operations, reduced tax inefficiencies, improved productivity and market reach.
+• Flipkart (E-commerce): Simplified interstate sales, lowered liabilities, boosted efficiency post-compliance tweaks.
+Economic Outcomes
+Studies show 1% GST revenue growth drives 0.56% GDP increase; it curbed evasion, formalized economy, and supported 7-8% annual growth, though with short-term disruptions.
+Lessons Learned
+Success hinged on digital portals for compliance, but SMEs needed support for transition; overall, it exemplifies taxation's role in growth and unification.""",
+            "questions": [
+                {
+                    "question": " Which of the following best describes a primary objective behind implementing GST in India in 2017?",
+                    "options": ["Raise tax rates", "replace multiple indirect taxes with unified system of taxes", "Increase custom duties on imported goods", "To eliminate state level taxation"],
+                    "answer": 1,
+                    "explanation": "GST unified many indirect taxes into one framework to reduce cascading and ease interstate trade."
+                },
+                {
+                    "question": " In the initial years after GST implementation, which category of businesses faced the greatest compliance burden due to digital filing and frequent return requirements??",
+                    "options": ["Large scale industries", "Export agriculture producers", "Foreign investors", "Small and medium Entrepreneurs (SME)"],
+                    "answer": 3,
+                    "explanation": "SMEs faced higher relative compliance costs due to system changes and digital filings."
+                }
+            ]
+        },
+    },
+
+    "Level 4 - Savings": {
+        "Lesson 1 – What is budgeting and its importance": {
+            "content": """ Budgeting is the process of planning how you will use your money before you actually spend it. It means understanding how much money you earn or receive and deciding in advance how much you will spend, save, or invest. Instead of spending randomly and worrying later, budgeting gives you control. It helps you make sure your money lasts throughout the month and supports your goals.
+Budgeting is important because it prevents overspending and helps you avoid financial stress. When you track and plan your money, you are less likely to run out of funds before the end of the month. It also helps you save for important goals like higher education, buying a vehicle, or starting a business. Budgeting builds discipline and gives you confidence in managing your finances. Without budgeting, even a good income can disappear quickly
+.""",
+            "questions": [
+                {
+                    "question": " What is the main purpose of budgeting?",
+                    "options": ["A) To spend all your money quickly", "B) To plan how to use your money before spending", "C) To avoid saving money", "D) To increase debts "],
+                    "answer": 1,
+                    "explanation": "Budgeting is planning your money before spending."
+                },
+                {
+                    "question": " Why is budgeting important even if you earn a high?",
+                    "options": ["A) Because high earners don’t need savings", "B) Because money automatically grows", "C) Because income can disappear without planning", "D) Because spending is mandatory "],
+                    "answer": 2,
+                    "explanation": "Without planning, even high income can be wasted."
+                },
+                {
+                    "question": " Budgeting helps reduce financial stress because it:",
+                    "options": ["A) Eliminates all expenses", "B) Tracks and plans spending", "C) Stops you from earning", "D) Forces you to invest everything"],
+                    "answer": 1,
+                    "explanation": "Tracking and planning reduces surprises and stress."
+                },
+                {
+                    "question": " Which of the following is a benefit of budgeting?",
+                    "options": ["A) Random spending", "B) Financial discipline", "C) Increased confusion", "D) Overspending "],
+                    "answer": 1,
+                    "explanation": "Budgeting promotes discipline."
+                },
+                {
+                    "question": " Without budgeting, what is most likely to happen?",
+                    "options": ["A) Savings increase automatically", "B) Goals are achieved faster", "C) Money may run out before month-end", "D) Income doubles "],
+                    "answer": 2,
+                    "explanation": "Unplanned spending often leads to running out of money."
+                }
+            ]
+        },
+
+        "Lesson 2 – Do’s of budgeting ": {
+            "content": """ One effective method is Zero-Based Budgeting. In this method, your income minus your expenses equals zero. This does not mean you spend all your money; it means every rupee is assigned a purpose, including savings. For example, if you earn ₹20,000, you plan exactly how that ₹20,000 will be divided into rent, food, transport, savings, and other categories so that nothing is left unplanned.
+    Envelope Method:
+    In this approach, you divide your money into different categories such as food, travel, shopping, and entertainment. You only spend what is allocated to that category. If the money in one category finishes, you stop spending in that area. This method helps control impulsive spending and builds financial discipline.
+    The 50:30:20 rule:
+    It is a simple and popular budgeting formula. According to this rule, 
+    50% of your income should go towards needs, 
+    30% towards wants, and 
+    20% towards savings. 
+    Needs include essential expenses like rent, groceries, electricity, and transport. Wants include things like shopping, entertainment, and eating out. Savings are meant for future goals and financial security. This rule creates a balanced financial lifestyle.
+    Emergency fund:
+    Life is unpredictable, and unexpected expenses such as medical emergencies, job loss, or sudden repairs can happen at any time. An emergency fund is money saved specifically for such situations. Ideally, you should save three to six months of your living expenses. This provides financial security and reduces stress during difficult times.
+.""",
+            "questions": [
+                {
+                    "question": " In Zero-Based Budgeting, income minus expenses equals?",
+                    "options": ["A) Profit", "B) Savings only", "C) Zero", "D) Debt "],
+                    "answer": 2,
+                    "explanation": "Every rupee is assigned a job; leftover balance is zero by plan."
+                },
+                {
+                    "question": " In the 50:30:20 rule, how much is allocated for savings?",
+                    "options": ["A) 50%", "B) 30%", "C) 20%", "D) 10%"],
+                    "answer": 2,
+                    "explanation": "20% is allocated to savings."
+                },
+                {
+                    "question": " The Envelope Method mainly helps to?",
+                    "options": ["A) Increase income", "B) Control impulsive spending", "C) Avoid saving", "D) Invest in stocks D"],
+                    "answer": 1,
+                    "explanation": "It limits spending within set category amounts."
+                },
+                {
+                    "question": " In the 50:30:20 rule, rent and groceries fall under?",
+                    "options": ["A) Wants", "B) Savings", "C) Needs", "D) Investments "],
+                    "answer": 2,
+                    "explanation": "Needs include essentials like rent and groceries."
+                },
+                {
+                    "question": " An emergency fund should ideally cover?",
+                    "options": ["A) 1 week of expenses", "B) 1 month of expenses", "C) 3–6 months of expenses", "D) 1 year of shopping "],
+                    "answer": 2,
+                    "explanation": "Aim for 3–6 months of essential expenses."
+                }
+            ]
+        },
+
+        "Lesson 3 – Don’t’s of budgeting": {
+            "content": """ While budgeting, there are some common mistakes to avoid. Do not confuse needs with wants, as this can lead to unnecessary spending. Avoid ignoring small daily expenses, because small amounts add up over time. Do not forget recurring expenses like subscriptions or monthly bills. Another mistake is failing to review your budget regularly. A budget should be adjusted when your income or expenses change. Budgeting is not a one-time activity; it requires continuous monitoring.
+.""",
+            "questions": [
+                {
+                    "question": " Confusing wants with needs can lead to?",
+                    "options": ["A) Smart saving", "B) Financial growth", "C) Unnecessary spending", "D) Increased income "],
+                    "answer": 2,
+                    "explanation": "Misclassifying wants as needs increases wasteful spending."
+                },
+                {
+                    "question": " Ignoring small daily expenses can:?",
+                    "options": ["A) Have no effect", "B) Improve savings", "C) Add up into a large amount", "D) Reduce stress "],
+                    "answer": 2,
+                    "explanation": "Small leaks sink big ships—small spends accumulate."
+                },
+                {
+                    "question": " Why should recurring expenses be included in budgeting?",
+                    "options": ["A) They are optional", "B) They occur regularly", "C) They are one-time costs", "D) They don’t affect finances "],
+                    "answer": 1,
+                    "explanation": "Recurring charges are predictable costs that must be planned."
+                },
+                {
+                    "question": " A budget should be reviewed?",
+                    "options": ["A) Only once a year", "B) Never", "C) Regularly", "D) Only when income decreases "],
+                    "answer": 2,
+                    "explanation": "Review regularly to adjust for changes."
+                },
+                {
+                    "question": " Budgeting is?",
+                    "options": ["A) A one-time activity", "B) Continuous monitoring", "C) Only for business owners", "D) Only for rich people "],
+                    "answer": 1,
+                    "explanation": "Budgeting is an ongoing process."
+                }
+            ]
+        },
+
+        "Lesson 4 - Understanding": {
+            "content": """ Understanding Types of Expenses
+It is important to understand the difference between short-term and long-term expenses. Short-term expenses are regular monthly costs like rent, groceries, and bills. Long-term expenses are future goals such as buying a house, funding education, or planning for retirement.
+You should also understand recurring and one-time expenses. Recurring expenses happen regularly, such as subscriptions or rent. One-time expenses occur occasionally, such as buying a laptop or paying for a special event.
+Non-return lifestyle expenses are expenses that do not generate future income or increase in value. Examples include luxury shopping, expensive gadgets, or frequent dining out. While these are not wrong, they should be controlled so they do not affect savings and long-term goals.
+
+Tracking, Reviewing, and Adjusting
+Budgeting does not end after making a plan. You must track your expenses regularly, review your budget monthly, and adjust it when necessary. If your income increases, you should increase your savings instead of increasing lifestyle expenses unnecessarily. Regular review helps you stay aligned with your financial goals and adapt to changes in your life.
+.""",
+            "questions": [
+                {
+                    "question": " Rent and groceries are examples of?",
+                    "options": ["A) Long-term expenses", "B) Short-term expenses", "C) One-time expenses", "D) Luxury expenses "],
+                    "answer": 0,
+                    "explanation": "They recur monthly and are current essentials."
+                },
+                {
+                    "question": " Buying a house is considered a?",
+                    "options": ["A) Short-term expense", "B) Recurring expense", "C) Long-term expense", "D) Daily expense "],
+                    "answer": 2,
+                    "explanation": "A long-term goal/expense."
+                },
+                {
+                    "question": " A subscription service is a?",
+                    "options": ["A) One-time expense", "B) Recurring expense", "C) Investment", "D) Emergency fund "],
+                    "answer": 1,
+                    "explanation": "Subscriptions recur periodically."
+                },
+                {
+                    "question": " Buying a laptop once is a?",
+                    "options": ["A) Recurring expense", "B) One-time expense", "C) Daily expense", "D) Monthly expense "],
+                    "answer": 1,
+                    "explanation": "It is a non-recurring purchase."
+                },
+                {
+                    "question": " Luxury shopping is considered a?",
+                    "options": ["A) Need", "B) Non-return lifestyle expense", "C) Long-term investment", "D) Recurring income "],
+                    "answer": 1,
+                    "explanation": "Luxury consumption usually doesn't generate returns."
+                }
+            ]
+        }
+    }
+}
+
+# ======================================
+# DO NOT TOUCH BELOW
+# ======================================
+
+class MainMenu(Screen):
+    def on_enter(self):
+        self.clear_widgets()
+        layout = BoxLayout(orientation="vertical", padding=dp(12), spacing=dp(10))
+        apply_background(layout)
+
+        title = Label(text="[b]Learning Levels[/b]", markup=True, color=TEXT,
+                      size_hint_y=None, height=dp(56))
+        subtitle = Label(text="Choose a level to get started", color=SUBTEXT,
+                         size_hint_y=None, height=dp(28))
+        layout.add_widget(title)
+        layout.add_widget(subtitle)
+
+        for level in app_data.keys():
+            btn = primary_button(level, on_press=lambda x, l=level: self.open_level(l))
+            layout.add_widget(btn)
+
+        self.add_widget(layout)
+
+    def open_level(self, level_name):
+        from kivy.uix.screenmanager import SlideTransition
+        self.manager.transition = SlideTransition(direction="left", duration=0.18)
+        self.manager.current = level_name
+
+
+class LevelScreen(Screen):
+    def __init__(self, level_name, **kwargs):
+        super().__init__(name=level_name, **kwargs)
+        layout = BoxLayout(orientation="vertical", padding=dp(12), spacing=dp(10))
+        apply_background(layout)
+
+        title = Label(text=f"[b]{level_name}[/b]", markup=True, color=TEXT,
+                      size_hint_y=None, height=dp(56))
+        subtitle = Label(text="Select a lesson", color=SUBTEXT,
+                         size_hint_y=None, height=dp(28))
+        layout.add_widget(title)
+        layout.add_widget(subtitle)
+
+        for lesson in app_data[level_name].keys():
+            btn = outline_button(lesson, on_press=lambda x, l=lesson: self.open_lesson(l))
+            layout.add_widget(btn)
+
+        self.add_widget(layout)
+        self.level_name = level_name
+
+    def open_lesson(self, lesson_name):
+        from kivy.uix.screenmanager import SlideTransition
+        self.manager.transition = SlideTransition(direction="left", duration=0.18)
+        self.manager.current = f"{self.level_name}-{lesson_name}"
+
+
+class LessonScreen(Screen):
+    def __init__(self, level_name, lesson_name, lesson_data, **kwargs):
+        super().__init__(name=f"{level_name}-{lesson_name}", **kwargs)
+
+        root = BoxLayout(orientation="vertical", padding=dp(12), spacing=dp(10))
+        apply_background(root)
+
+        title = Label(text=f"[b]{lesson_name}[/b]", markup=True, color=TEXT,
+                      size_hint_y=None, height=dp(52))
+        root.add_widget(title)
+
+        # Scrollable card with wrapped content
+        scroll = ScrollView(size_hint=(1, 1))
+        card = card_container(pad=dp(12))
+        content = Label(
+            text=lesson_data.get("content", "Add content here."),
+            size_hint=(1, None),
+            halign="left",
+            valign="top",
+            color=TEXT
+        )
+        def _wrap(*_):
+            content.text_size = (card.width - dp(24), None)
+            content.texture_update()
+            content.height = content.texture_size[1]
+            card.height = content.height + dp(24)
+        card.bind(width=_wrap); Clock.schedule_once(_wrap, 0)
+
+        card.add_widget(content)
+        scroll.add_widget(card)
+        root.add_widget(scroll)
+
+        start_btn = primary_button("Start Quiz", on_press=lambda *_: self.start_quiz(level_name, lesson_name))
+        root.add_widget(start_btn)
+
+        self.add_widget(root)
+
+    def start_quiz(self, level_name, lesson_name):
+        from kivy.uix.screenmanager import SlideTransition
+        self.manager.transition = SlideTransition(direction="left", duration=0.18)
+        self.manager.current = f"quiz-{level_name}-{lesson_name}"
+
+
+class QuizScreen(Screen):
+    def __init__(self, level_name, lesson_name, lesson_data, **kwargs):
+        super().__init__(name=f"quiz-{level_name}-{lesson_name}", **kwargs)
+
+        self.level_name = level_name
+        self.lesson_name = lesson_name
+        self.questions = lesson_data.get("questions", [])
+        self.q_index = 0
+        self.score = 0
+        self.answered = False
+        self.option_buttons = []
+
+        # Root vertical layout
+        self.root_box = BoxLayout(orientation="vertical", spacing=8, padding=(10, 10, 10, 10))
+        apply_background(self.root_box)
+        self.add_widget(self.root_box)
+
+        # --- Title / Top bar ---
+        top_bar = BoxLayout(orientation="horizontal", size_hint_y=None, height=48, spacing=8)
+        self.title_lbl = Label(text=f"Quiz: {lesson_name}", halign="left", valign="middle")
+        self.title_lbl.bind(size=lambda i, v: setattr(i, "text_size", v))
+        top_bar.add_widget(self.title_lbl)
+        self.root_box.add_widget(top_bar)
+
+        # --- Question area (scrollable) ---
+        self.q_scroll = ScrollView(size_hint=(1, 0.50), do_scroll_x=False)
+        self.q_container = BoxLayout(orientation="vertical", size_hint=(1, None), padding=(6, 6, 6, 6))
+        self.q_container.bind(minimum_height=self.q_container.setter("height"))
+
+        self.question_lbl = Label(
+            text="",
+            size_hint=(1, None),
+            halign="left",
+            valign="top",
+        )
+        self.q_container.add_widget(self.question_lbl)
+        self.q_scroll.add_widget(self.q_container)
+        self.root_box.add_widget(self.q_scroll)
+
+        # --- Options (buttons) ---
+        self.options_box = GridLayout(cols=1, spacing=8, size_hint=(1, None))
+        self.options_box.height = 4 * 52  # default; recalculated per question
+        self.root_box.add_widget(self.options_box)
+
+        # --- Feedback (short, non-scroll) ---
+        self.feedback_lbl = Label(
+            text="",
+            size_hint=(1, None),
+            height=70,
+            halign="left",
+            valign="top",
+        )
+        self.feedback_lbl.bind(size=lambda i, v: setattr(i, "text_size", (v[0]-10, None)))
+        self.root_box.add_widget(self.feedback_lbl)
+
+        # --- Bottom bar (Next) ---
+        bottom_bar = BoxLayout(orientation="horizontal", size_hint_y=None, height=56, spacing=8)
+        bottom_bar.add_widget(Widget())  # spacer
+        self.next_btn = Button(text="Next", disabled=True, size_hint_x=None, width=120)
+        self.next_btn.bind(on_press=lambda *_: self.goto_next())
+        bottom_bar.add_widget(self.next_btn)
+        self.root_box.add_widget(bottom_bar)
+
+        # Wrap the question when width changes
+        self.root_box.bind(width=lambda *_: self._wrap_question())
+        Clock.schedule_once(lambda *_: self._wrap_question(), 0)
+
+        # Render first question
+        self.render_question()
+
+    # ---------- UI helpers ----------
+    def _wrap_question(self):
+        avail_w = max(0, self.root_box.width - 30)  # account for padding
+        self.question_lbl.text_size = (avail_w, None)
+        self.question_lbl.texture_update()
+        self.question_lbl.height = self.question_lbl.texture_size[1] + 10
+
+    def _update_options_height(self, num_options):
+        btn_h = 48
+        spacing = 8
+        self.options_box.height = num_options * btn_h + max(0, (num_options - 1)) * spacing
+
+    # ---------- Screen building ----------
+    def render_question(self):
+        self.answered = False
+        self.next_btn.text = "Next"
+        self.next_btn.disabled = True
+        self.feedback_lbl.text = ""
+
+        if not self.questions:
+            self.title_lbl.text = f"Quiz: {self.lesson_name}"
+            self.question_lbl.text = "No questions found."
+            self.options_box.clear_widgets()
+            return
+
+        q = self.questions[self.q_index]
+        total = len(self.questions)
+        self.title_lbl.text = f"Quiz: {self.lesson_name}   (Q {self.q_index + 1}/{total})"
+        self.question_lbl.text = q["question"]
+        self._wrap_question()
+
+        # Build options
+        self.options_box.clear_widgets()
+        self.option_buttons = []
+        for idx, option in enumerate(q["options"]):
+            btn = Button(text=option, size_hint_y=None, height=48)
+            btn.bind(on_press=lambda x, i=idx, q=q: self.check_answer(i, q))
+            self.options_box.add_widget(btn)
+            self.option_buttons.append(btn)
+
+        self._update_options_height(len(self.option_buttons))
+
+    # ---------- Answer handling ----------
+    def check_answer(self, selected, question):
+        if self.answered:
+            return
+
+        correct = (selected == question["answer"])
+        verdict = "✅ Correct!" if correct else "❌ Wrong!"
+        explanation = question.get("explanation", "")
+
+        # Disable options after answering
+        for b in self.option_buttons:
+            b.disabled = True
+
+        self.answered = True
+
+        # Use the green/red chip for feedback
+        set_feedback_chip(self.feedback_lbl, correct, f"{verdict}\n{explanation}")
+
+        # If last question -> go to next lesson/main after a short pause
+        if self.q_index == len(self.questions) - 1:
+            Clock.schedule_once(lambda *_: self.navigate_to_next_lesson(), 0.8)
+            self.next_btn.text = "Finish"
+            self.next_btn.disabled = False
+            return
+
+        # Not the last question
+        if correct:
+            # Auto-advance after short delay
+            self.next_btn.text = "Next"
+            self.next_btn.disabled = True
+            Clock.schedule_once(lambda *_: self.goto_next(), 0.6)
+        else:
+            # Let the user tap Next after reading
+            self.next_btn.text = "Next"
+            self.next_btn.disabled = False
+
+    def goto_next(self):
+        if not self.answered:
+            return
+        self.q_index += 1
+        if self.q_index >= len(self.questions):
+            self.navigate_to_next_lesson()
+        else:
+            self.render_question()
+
+    # ---------- Navigation to next lesson OR Main Menu ----------
+    def navigate_to_next_lesson(self):
+        """
+        Go to the next lesson in the same level.
+        If there are no more lessons in this level, go to the Main Menu ("main").
+        """
+        try:
+            lessons_in_level = list(app_data[self.level_name].keys())
+            current_idx = lessons_in_level.index(self.lesson_name)
+            next_idx = current_idx + 1
+            if next_idx < len(lessons_in_level):
+                # There is a next lesson -> open it
+                next_lesson = lessons_in_level[next_idx]
+                self.manager.current = f"{self.level_name}-{next_lesson}"
+            else:
+                # No more lessons in this level -> go to Levels screen (Main Menu)
+                self.manager.current = "main"
+        except Exception:
+            # Fallback: go to Main Menu
+            self.manager.current = "main"
+
+    # (Optional) Summary kept for reuse if needed
+    def show_summary(self):
+        total = len(self.questions)
+        summary_text = f"You scored {self.score} / {total}\n\nTap Finish to go back."
+        self.feedback_lbl.text = summary_text
+
+    def restart_quiz(self):
+        self.q_index = 0
+        self.score = 0
+        self.render_question()
+
+
+class LearningApp(App):
+    def build(self):
+        sm = ScreenManager()
+        sm.add_widget(MainMenu(name="main"))
+
+        for level_name, lessons in app_data.items():
+            sm.add_widget(LevelScreen(level_name))
+            for lesson_name, lesson_data in lessons.items():
+                sm.add_widget(LessonScreen(level_name, lesson_name, lesson_data))
+                sm.add_widget(QuizScreen(level_name, lesson_name, lesson_data))
+
+        sm.current = "main"
+        return sm
+
+
+if __name__ == "__main__":
+    LearningApp().run()
