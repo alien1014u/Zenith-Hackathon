@@ -16,11 +16,8 @@ from kivy.graphics import Color, Rectangle, RoundedRectangle, Line
 level_names = {
     1: "Level 1: EMI",
     2: "Level 2: Loans",
-    3: "Level 3: Understanding Interests",
-    4: "Level 4: Cards and Their Usage",
-    5: "Level 5: Digital Payment Systems",
-    6: "Level 6: Tax System",
-    7: "Level 7: Budget and Retirement Planning"
+    3: "Level 3: Tax System",
+    4: "Level 4: Budget and Retirement Planning"
 }
 
 
@@ -145,10 +142,7 @@ class LearningApp(App):
             1: [1, 2],
             2: [1],
             3: [],
-            4: [],
-            5: [],
-            6: [],
-            7: []
+            4: []
         }
 
         self.current_level = None
@@ -938,139 +932,6 @@ Budgeting does not end after making a plan. You must track your expenses regular
         }
     }
 }
-    "Level 5 - INTEREST & SAVINGS": {
-        "Lesson 1 - Simple Interest": {{
-    "content": """Simple Interest is the interest calculated only on the original amount of money invested or borrowed. This original amount is called the principal. The interest remains constant throughout the time period because it is not added back to the principal.
-The formula for Simple Interest is:
-SI = (P × R × T) / 100
-Where:
-P = Principal
-R = Rate of Interest
-T = Time
-Simple interest is mostly used in short-term loans and basic savings calculations. It is easy to calculate and understand
-""",
-
-    "questions": [
-        {
-            "question": " What does P represent in Simple Interest formula??",
-            "options": ["Principal", "Profit", "Percentage", "Payment"],
-            "answer": 0,
-            "explanation": "P stands for Principal amount."
-        },
-        {
-            "question": "Which formula is correct for Simple Interest?",
-            "options": ["P+R+T", "(P×R×T)/100", "P×R/T", "R×T"],
-            "answer": 1,
-            "explanation": "The correct formula is (P×R×T)/100."
-        }
-    ]
-}},
-        "Lesson 2 - Compound Interest": {{
-    "content": """"Compound Interest is the interest calculated on both the principal and the previously earned interest. This means interest is added to the principal, and the next interest is calculated on the increased amount.
-This is called "interest on interest". Compound interest helps money grow faster compared to simple interest.
-Formula:
-CI = P(1 + R/100)^T − P
-Compound interest is commonly used in bank savings, Fixed Deposits (FD), and long-term investments.
-""",
-
-    "questions": [
-        {
-            "question": "Compound interest is also called??",
-            "options": ["Simple growth", "Interest on interest", "Tax interest", "Flat interest"],
-            "answer": 0,
-            "explanation": "Compound interest means interest on interest."
-        },
-        {
-            "question": " Compound interest is mostly used in?",
-            "options": ["Savings accounts", "Electricity bill", "Bus ticket", "Super Markets"],
-            "answer": 0,
-            "explanation": "Savings and fixed deposits use compound interest."
-        }
-    ]
-}},
-        "Lesson 3 - Savings & Fixed Deposits -FD": {{
-    "content": """Saving money means keeping a part of your income for future use. Banks provide different saving options like Savings Account, Fixed Deposit (FD), and Recurring Deposit (RD).
-A Fixed Deposit (FD) is an investment where you deposit a lump sum amount for a fixed time period at a fixed interest rate. The interest is usually compounded.
-FD is safe and gives guaranteed returns, making it suitable for students and beginners.
-Saving regularly helps build emergency funds and financial security.
-""",
-
-    "questions": [
-        {
-            "question": "FD stands for?",
-            "options": ["Fixed Deposit", "Final Deposit", "Fast Deposit", "Free Deposit"],
-            "answer": 0,
-            "explanation": "FD means Fixed Deposit."
-        },
-        {
-            "question": " Saving money helps in?",
-            "options": ["Emergency situations", "Wasting money", "Increasing debt", "None"],
-            "answer": 0,
-            "explanation": "Savings help during emergencies."
-        }
-    ]
-}},
-
-
-    "Level 6 - DIGITAL PAYMENT SYSTEM": {
-        "Lesson 1 - Digital Payments Basics": {{
-    "content": """Digital payment means transferring money electronically without using physical cash. It can be done using mobile apps, debit cards, credit cards, or internet banking.
-Examples include UPI apps, online bank transfers, and QR code payments.
-Digital payments are fast, convenient, and reduce the need to carry cash. However, users must be careful about scams and OTP fraud""",
-
-    "questions": [
-        {
-            "question": " Digital payment means?",
-            "options": ["Cash payment", "Online money transfer", "Cheque only", "Gold payment"],
-            "answer": 1,
-            "explanation": "Digital payment means transferring money electronically.."
-        },
-        {
-            "question": "Which is used in digital payment?",
-            "options": ["UPI", "Cash note", "Coins only", "Paper bill"],
-            "answer": 1,
-            "explanation": "UPI is a digital payment method."
-        }
-    ]
-}},
-        "Lesson 2 - Mutual Funds Basics": {{
-    "content": """ A mutual fund is an investment option where money from many people is collected and invested in stocks, bonds, or other assets by a professional fund manager.
-It helps beginners invest with small amounts of money. Mutual funds can give higher returns compared to savings accounts but may involve risk.
-SIP (Systematic Investment Plan) allows investing small amounts regularly.
-.""",
-
-    "questions": [
-        {
-            "question": ""Mutual funds collect money from?",
-            "options": ["One person", "Many investors", "Government only", "Banks only"],
-            "answer": 1,
-            "explanation": "Mutual funds pool money from many investors."
-        },
-        {
-            "question": "Mutual funds have?",
-            "options": ["No risk", "Some risk", "Only loss", "No growth"],
-            "answer": 1,
-            "explanation": "Mutual funds involve some level of risk."
-        }
-    ]
-}},
-        "Lesson 3 - Cryptocurrency Basics": {{
-    "content": """ Cryptocurrency is a digital currency that works using blockchain technology. It is not controlled by any central bank.
-Examples include Bitcoin and Ethereum. Cryptocurrency prices are highly volatile, meaning they change quickly.
-Crypto investments can give high returns but also carry high risk. It is not guaranteed and requires careful research..""",
-
-    "questions": [
-        {
-            "question": "Cryptocurrency is?",
-            "options": ["Physical coin", "Digital currency", "Bank cheque", "Gold""],
-            "answer": 1,
-            "explanation": "Cryptocurrency is a digital currency."
-        },
-    ]
-}},
-}}
-    },
-
 
 # ======================================
 # DO NOT TOUCH BELOW
